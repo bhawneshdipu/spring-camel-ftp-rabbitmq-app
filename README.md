@@ -1,1 +1,1 @@
-# App for apache camel FTP Integration
+# App for apache camel FTP RabbitMQ Integration
