@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/rabbit https://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- Initialize Spring context -->
+    <context:annotation-config/>
+    <!-- Infrastructure -->
+
+    <rabbit:connection-factory id="rabbitmq-connection-factory" host="${spring.rabbitmq.host:127.0.0.1}"
+                               username="${spring.rabbitmq.username:guest}"
+                               password="${spring.rabbitmq.password:guest}"
+                               port="${spring.rabbitmq.port:5672}"
+                               virtual-host="${spring.rabbitmq.vhost:/}"
+                               publisher-returns="true" />
+
+    <rabbit:template id="rabbitmq-template" connection-factory="rabbitmq-connection-factory" />
+
+    <rabbit:admin id="rabbitmq-admin" connection-factory="rabbitmq-connection-factory" />
+
+    <rabbit:queue id="rabbitmq-default-queue" name="${app.rabbitmq.queue.name:rabbitmq-default-queue}" />
+    <rabbit:queue id="rabbitmq-in-queue" name="${app.rabbitmq.queue.name:rabbitmq-in-queue}" />
+    <rabbit:queue id="rabbitmq-out-queue" name="${app.rabbitmq.queue.name:rabbitmq-out-queue}" />
+
+    <rabbit:direct-exchange id="rabbitmq-default-exchange" name="${app.rabbitmq.exchange.name:rabbitmq-default-exchange}" >
+        <rabbit:bindings>
+            <rabbit:binding queue="${app.rabbitmq.queue.name:rabbitmq-default-queue}" key="${app.rabbitmq.queue.binding:rabbitmq-default-queue-binding}" />
+        </rabbit:bindings>
+    </rabbit:direct-exchange>
+
+</beans>

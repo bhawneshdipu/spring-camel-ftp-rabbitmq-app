@@ -1,0 +1,18 @@
+version: '3.2'
+services:
+    sftp:
+        image: atmoz/sftp:alpine 
+        volumes:
+          - type: bind
+            source: data/upload/
+            target: /home/foo/data/upload/
+          - type: volume
+            source: sftp-data
+            target: /home/foo/data/
+        ports:
+          - "2222:22"
+        command: foo:pass:1001:100
+        environment: 
+          - SFTP_USERS=bar:pass:1002:100
+volumes:
+ sftp-data:

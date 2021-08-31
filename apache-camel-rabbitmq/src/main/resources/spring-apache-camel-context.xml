@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xmlns:rabbitmq-spring="http://camel.apache.org/schema/spring"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+          http://camel.apache.org/schema/spring
+          http://camel.apache.org/schema/spring/camel-spring.xsd
+          http://www.springframework.org/schema/util
+          http://www.springframework.org/schema/util/spring-util-4.2.xsd
+          http://camel.apache.org/schema/spring
+          http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <import resource="classpath:spring-rabbitmq-context.xml"/>
+
+    <camel:endpoint id="rabbitmq-in-queue-endpoint" uri="rabbitmq://localhost:5672/rabbitmq-default-exchange">
+        <camel:property key="queue" value="rabbitmq-in-queue"/>
+        <camel:property key="routingKey" value="defaultRoutingKey"/>
+    </camel:endpoint>
+    <camel:endpoint id="rabbitmq-out-queue-endpoint" uri="rabbitmq://localhost:5672/rabbitmq-default-exchange">
+        <camel:property key="queue" value="rabbitmq-out-queue"/>
+        <camel:property key="routingKey" value="defaultRoutingKey"/>
+    </camel:endpoint>
+    <bean id="camelRabbitMQProcessor" class="com.dipu.rabbitmq.processor.CamelRabbitMQProcessor"/>
+    <camel:camelContext xmlns="http://camel.apache.org/schema/spring">
+        <camel:route id="local-http-response-to-rabbitmq" delayer="5000">
+            <camel:from uri="timer:foo?period=2000"/>
+            <camel:to uri="http://localhost:8080/from/robot"/>
+            <camel:log message="Get Message from http response to rabbitmq queue"/>
+            <pipeline>
+                <bean ref="camelRabbitMQProcessor" method="enrich"/>
+                <bean ref="camelRabbitMQProcessor" method="check(${body}, ${headers})"/>
+            </pipeline>
+            <camel:to uri="ref:rabbitmq-in-queue-endpoint"/>
+        </camel:route>
+        <camel:route id="rabbitmq-to-rabbitmq" delayer="2000">
+            <camel:from uri="ref:rabbitmq-in-queue-endpoint"/>
+            <pipeline>
+                <bean ref="camelRabbitMQProcessor" method="enrich"/>
+                <bean ref="camelRabbitMQProcessor" method="check(${body}, ${headers})"/>
+            </pipeline>
+            <camel:log message="Get Message from rabbitmq in"/>
+            <pipeline>
+                <bean ref="camelRabbitMQProcessor" method="enrich"/>
+                <bean ref="camelRabbitMQProcessor" method="check(${body}, ${headers})"/>
+            </pipeline>
+            <camel:log message="Get Message to rabbitmq out"/>
+            <camel:to uri="ref:rabbitmq-out-queue-endpoint"/>
+        </camel:route>
+        <camel:route id="rabbitmq-to-file" delayer="2000">
+            <camel:from uri="ref:rabbitmq-out-queue-endpoint"/>
+            <pipeline>
+                <bean ref="camelRabbitMQProcessor" method="enrich"/>
+                <bean ref="camelRabbitMQProcessor" method="check(${body}, ${headers})"/>
+            </pipeline>
+            <camel:log message="Get Message from rabbitmq out to file"/>
+            <pipeline>
+                <bean ref="camelRabbitMQProcessor" method="enrich"/>
+                <bean ref="camelRabbitMQProcessor" method="check(${body}, ${headers})"/>
+            </pipeline>
+            <setHeader headerName="fileName">
+                <simple>${headers.key}-hello</simple>
+            </setHeader>
+            <camel:to uri="file://data/output?fileName=${headers.fileName}.txt"/>
+        </camel:route>
+    </camel:camelContext>
+
+
+</beans>

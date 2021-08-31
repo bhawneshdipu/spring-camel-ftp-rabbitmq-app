@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  docker-rabbitmq:
+    container_name: docker-rabbitmq
+    hostname: docker-rabbitmq.localhost.com
+    image: bhawnesh_dipu/docker-rabbitmq-alpine:v0
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    working_dir: /code
+    build:
+      context: ./src/main/resources/
+      dockerfile: Dockerfile
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    env_file:
+      - src/main/resources/rabbitmq-env.env
+    tty: true
+
+volumes:
+  rabbitmq-data:
